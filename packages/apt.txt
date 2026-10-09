@@ -1,0 +1,17 @@
+build-essential
+chafa
+curl
+git
+htop
+make
+mariadb-client
+mariadb-server
+net-tools
+nmap
+python3-netifaces
+screenfetch
+traceroute
+tree
+vim
+virtualbox-guest-utils
+wireshark

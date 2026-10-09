@@ -22,6 +22,21 @@ ITEMS=(
   "tmux.conf|$HOME/.tmux.conf|home/.tmux.conf"
 )
 
+# Extras de esta VM (cosas solo de esta máquina, fuera de la config compartida):
+#   fish -> /etc/fish/conf.d/zz-<nombre>.fish   se guardan en extras/fish/<nombre>.fish
+#   bash -> ~/.bashrc.d/<nombre>.bash           se guardan en extras/bash/<nombre>.bash
+# En otras VMs se eligen desde el módulo "extras" de install.sh.
+for f in /etc/fish/conf.d/zz-*.fish; do
+  [[ -e $f ]] || continue
+  b=$(basename "$f"); b=${b#zz-}
+  ITEMS+=("extra:fish/$b|$f|extras/fish/$b")
+done
+for f in "$HOME"/.bashrc.d/*.bash; do
+  [[ -e $f ]] || continue
+  b=$(basename "$f")
+  ITEMS+=("extra:bash/$b|$f|extras/bash/$b")
+done
+
 # Trae lo último del repo antes de nada, para comparar contra la versión actual
 if git rev-parse --git-dir >/dev/null 2>&1 && git remote get-url origin >/dev/null 2>&1; then
   git pull --ff-only -q || echo "!! No se pudo hacer git pull; sigue con la versión local del repo"
@@ -32,7 +47,13 @@ args=()
 for it in "${ITEMS[@]}"; do
   IFS='|' read -r name src dst <<<"$it"
   [[ -e $src ]] || continue
-  if [[ -e $dst ]]; then estado="ya está en el repo"; else estado="nuevo"; fi
+  if [[ ! -e $dst ]]; then
+    estado="nuevo"
+  elif [[ -f $src ]] && cmp -s "$src" "$dst"; then
+    estado="igual que en el repo"
+  else
+    estado="ya está en el repo"
+  fi
   args+=("$name" "$estado" OFF)
 done
 ((${#args[@]})) || { echo "No hay nada que exportar."; exit 0; }

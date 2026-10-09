@@ -20,10 +20,11 @@ Se puede volver a ejecutar cuando quieras para añadir módulos. Al terminar com
 |---|---|---|
 | **base** | git, curl, wget, unzip, build-essential, ripgrep, fd, fzf, bat, tree, htop, btop, jq, xclip, tmux | Alias `fd` y `bat` en `~/.local/bin` |
 | **paquetes** | Los de `packages/apt.txt`, eligiendo uno a uno | — |
-| **redes** | Wireshark, tshark, tcpdump, nmap, traceroute, mtr, dig, netcat, iperf3, ipcalc, arp-scan, net-tools, openssh-server... | Wireshark sin root (grupo `wireshark`), SSH activo. **Opcional:** alias de red y prompt de bash `usuario@ip` |
-| **fish** | fish, Oh My Fish | `~/.config/fish`, `~/.config/omf`. **Pregunta:** prompt (tema de Oh My Fish o pez con IP y git) y si fish va como shell por defecto |
+| **redes** | Wireshark, tshark, tcpdump, nmap, traceroute, mtr, dig, netcat, iperf3, ipcalc, arp-scan, net-tools, openssh-server... | Wireshark sin root (grupo `wireshark`), SSH activo |
+| **fish** | fish, Oh My Fish | `~/.config/fish`, `~/.config/omf`. Pregunta si fish va como shell por defecto |
 | **nvim** | Neovim (última estable), tree-sitter CLI, lazygit, chafa, ripgrep, fd, node, gcc | `~/.config/nvim` (LazyVim) y sus plugins según `lazy-lock.json` |
 | **dotfiles** | — | `~/.config/htop`, `~/.gitconfig` y demás ficheros de `config/` y `home/` |
+| **extras** | — | Lista todos los extras del repo y marcas los que quieras en esta VM (ver abajo) |
 
 Las configuraciones se **copian**: cada VM tiene su propia copia y lo que cambies en una no afecta al repo ni a las demás.
 Para compartir algo, usa `export.sh` (abajo). Si ya existía algo en el destino, se mueve a `~/.dotfiles-backup/<fecha>/`.
@@ -33,16 +34,27 @@ Después de instalar nvim, ábrelo una vez y espera a que Mason termine de desca
 
 ## Extras por máquina (`extras/`)
 
-Cosas que se eligen al instalar y solo afectan a esa VM, sin tocar la config compartida:
+Cosas que solo quieres en algunas VMs (un prompt distinto, alias...). Viven fuera de la config compartida:
 
-| Archivo | Qué es | Cómo se activa |
-|---|---|---|
-| `extras/fish/prompt-pez.fish` | Prompt `><°> usuario@ip:ruta (rama) ❯` | Copia en `/etc/fish/conf.d/zz-prompt-pez.fish` |
-| `extras/fish/alias-redes.fish` | Alias `ips`, `rutas`, `puertos`, `captura`... | Copia en `/etc/fish/conf.d/zz-alias-redes.fish` |
-| `extras/bash/alias-redes.bash` | Los mismos alias para bash | Copia en `~/.bashrc.d/` + línea `# dotfiles:alias-redes.bash` en `~/.bashrc` |
-| `extras/bash/prompt-ip.bash` | Prompt de bash `usuario@ip:ruta$` | Copia en `~/.bashrc.d/` + línea `# dotfiles:prompt-ip.bash` en `~/.bashrc` |
+| En la VM | En el repo |
+|---|---|
+| `/etc/fish/conf.d/zz-<nombre>.fish` | `extras/fish/<nombre>.fish` |
+| `~/.bashrc.d/<nombre>.bash` (cargado desde `~/.bashrc`) | `extras/bash/<nombre>.bash` |
 
-Para quitar uno: borra el archivo de `/etc/fish/conf.d/` o la línea de `~/.bashrc`, o vuelve a ejecutar `install.sh` y elige otra opción.
+- **Crear uno:** escríbelo en esa ruta de la VM. La primera línea, un comentario (`# ...`), es la descripción que sale en los menús.
+- **Compartirlo:** `bash export.sh` lo detecta y lo ofrece como `extra:fish/...` o `extra:bash/...`.
+- **Ponerlo o quitarlo en una VM:** `bash install.sh` → módulo **extras**. Salen marcados los que ya tiene esa VM;
+  desmarcar uno lo quita. Los que ya estén instalados no se sobrescriben (se respeta tu versión local);
+  para traer la versión del repo, desmárcalo, ejecuta, y vuelve a marcarlo.
+
+Extras actuales:
+
+| Extra | Qué es |
+|---|---|
+| `fish/prompt-pez.fish` | Prompt `><°> usuario@ip:ruta (rama) ❯` |
+| `fish/alias-redes.fish` | Alias `ips`, `rutas`, `puertos`, `captura`... |
+| `bash/alias-redes.bash` | Los mismos alias para bash |
+| `bash/prompt-ip.bash` | Prompt de bash `usuario@ip:ruta$` |
 
 ## Dependencias de las configuraciones
 

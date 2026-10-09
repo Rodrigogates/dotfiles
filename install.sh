@@ -44,6 +44,17 @@ bash_extra_on() {
   echo "[ -f ~/.bashrc.d/$1 ] && . ~/.bashrc.d/$1  # dotfiles:$1" >> "$HOME/.bashrc"
   echo "   ~/.bashrc.d/$1"
 }
+bash_extra_off() {
+  rm -f "$HOME/.bashrc.d/$1"
+  sed -i "\|# dotfiles:$1\$|d" "$HOME/.bashrc"
+}
+
+# ¿Está este extra instalado en esta máquina? (tipo = fish | bash)
+extra_instalado() {
+  if [[ $1 == fish ]]; then [[ -e /etc/fish/conf.d/zz-$2 ]]
+  else grep -qF "# dotfiles:$2" "$HOME/.bashrc" 2>/dev/null
+  fi
+}
 
 # Pregunta de sí/no con whiptail; en modo --all usa el valor por defecto (1 = sí)
 preguntar() {
@@ -99,24 +110,7 @@ mod_redes() {
   fi
   sudo usermod -aG wireshark "$USER"
   sudo systemctl enable --now ssh
-
-  # Extras opcionales
-  local extras=""
-  if $ALL; then
-    extras="alias"
-  else
-    extras=$(whiptail --title "Redes: extras" --separate-output --checklist \
-      "Extras para esta VM (Espacio marca, Enter acepta)" 12 74 2 \
-      alias     "Alias de red: ips, rutas, puertos, captura... (bash y fish)" ON  \
-      prompt_ip "Prompt de bash usuario@ip"                                   OFF \
-      3>&1 1>&2 2>&3) || extras=""
-  fi
-  if [[ $extras == *alias* ]]; then
-    bash_extra_on alias-redes.bash
-    fish_extra_on alias-redes.fish
-  fi
-  [[ $extras == *prompt_ip* ]] && bash_extra_on prompt-ip.bash
-  return 0
+  echo "   Los alias de red y los prompts están en el módulo extras."
 }
 
 mod_fish() {
@@ -142,23 +136,6 @@ mod_fish() {
   if [[ -f $HOME/.config/fish/fish_plugins ]]; then
     fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher update'
   fi
-  # Qué prompt usar en esta VM
-  local prompt=tema
-  if ! $ALL; then
-    prompt=$(whiptail --title "Prompt de fish" --radiolist \
-      "¿Qué prompt quieres en esta VM? (Espacio elige, Enter acepta)" 12 74 2 \
-      tema "Tema de Oh My Fish  ⋊> ~/dotfiles on main ◦"            ON  \
-      pez  "Pez con IP y git    ><°> usuario@ip:~/dotfiles (main) ❯" OFF \
-      3>&1 1>&2 2>&3) || prompt=tema
-  fi
-  # Versión antigua hecha a mano en la VM de Redes; la sustituye prompt-pez.fish
-  sudo rm -f /etc/fish/conf.d/zz-prompt-redes.fish
-  if [[ $prompt == pez ]]; then
-    fish_extra_on prompt-pez.fish
-  else
-    fish_extra_off prompt-pez.fish
-  fi
-
   if [[ "$(getent passwd "$USER" | cut -d: -f7)" != "$(command -v fish)" ]]; then
     if preguntar "Shell por defecto" "¿Poner fish como shell por defecto? (si dices que no, se abre escribiendo fish)" 1; then
       grep -qxF "$(command -v fish)" /etc/shells || command -v fish | sudo tee -a /etc/shells >/dev/null
@@ -235,6 +212,51 @@ comprobar() {
   return 0
 }
 
+mod_extras() {
+  echo "==> Extras de esta VM"
+  # Versión antigua del prompt del pez hecha a mano; ahora es el extra prompt-pez.fish
+  if [[ -e /etc/fish/conf.d/zz-prompt-redes.fish ]]; then
+    sudo rm -f /etc/fish/conf.d/zz-prompt-redes.fish
+    [[ -e /etc/fish/conf.d/zz-prompt-pez.fish ]] || fish_extra_on prompt-pez.fish
+  fi
+
+  # Lista todos los extras del repo; los ya instalados aquí salen marcados
+  local args=() f tipo base desc estado
+  for f in "$DOTS"/extras/fish/*.fish "$DOTS"/extras/bash/*.bash; do
+    [[ -e $f ]] || continue
+    tipo=$(basename "$(dirname "$f")"); base=$(basename "$f")
+    desc=$(head -1 "$f" | sed 's/^#\s*//' | cut -c1-55)
+    if extra_instalado "$tipo" "$base"; then estado=ON; else estado=OFF; fi
+    args+=("$tipo/$base" "$desc" "$estado")
+  done
+  ((${#args[@]})) || { echo "   No hay extras en el repo"; return 0; }
+
+  local elegidos=""
+  if $ALL; then
+    elegidos=""   # con --all no se instala ningún extra: son cosas de cada VM
+  else
+    elegidos=$(whiptail --title "Extras de esta VM" --separate-output --checklist \
+      "Marca los que quieras en ESTA VM; desmarcar uno lo quita (Espacio marca, Enter acepta)" \
+      20 78 10 "${args[@]}" 3>&1 1>&2 2>&3) || { echo "   Sin cambios"; return 0; }
+  fi
+
+  local i tag
+  for ((i = 0; i < ${#args[@]}; i += 3)); do
+    tag=${args[i]}; tipo=${tag%%/*}; base=${tag#*/}
+    if grep -qxF "$tag" <<<"$elegidos"; then
+      if extra_instalado "$tipo" "$base"; then
+        # No se pisa la versión de esta VM (puede que la hayas retocado)
+        echo "   $tag ya estaba, se mantiene tu versión"
+      else
+        "${tipo}_extra_on" "$base"
+      fi
+    elif extra_instalado "$tipo" "$base"; then
+      "${tipo}_extra_off" "$base"; echo "   quitado $tag"
+    fi
+  done
+  return 0
+}
+
 mod_dotfiles() {
   echo "==> Resto de configuraciones"
   for d in "$DOTS"/config/*; do
@@ -262,13 +284,14 @@ if $ALL; then
   MODULOS="base paquetes redes fish nvim dotfiles"
 else
   MODULOS=$(whiptail --title "Instalador de la VM" --separate-output --checklist \
-    "Elige qué instalar (Espacio marca, Enter acepta)" 18 72 6 \
+    "Elige qué instalar (Espacio marca, Enter acepta)" 19 72 7 \
     base     "Básicos: git, curl, ripgrep, fzf, tmux..."      ON  \
     paquetes "Paquetes exportados (eliges uno a uno)"         OFF \
     redes    "Herramientas de Redes (Wireshark, nmap...)"     OFF \
-    fish     "Fish + plugins + shell por defecto"             ON  \
+    fish     "Fish + Oh My Fish + shell por defecto"          ON  \
     nvim     "Neovim + LazyVim + lazygit, chafa, tree-sitter" ON  \
-    dotfiles "Resto de configs (git, tmux, terminal...)"      ON  \
+    dotfiles "Resto de configs (git, htop...)"                ON  \
+    extras   "Extras de esta VM: prompts, alias (eliges)"     OFF \
     3>&1 1>&2 2>&3) || { echo "Cancelado."; exit 0; }
 fi
 

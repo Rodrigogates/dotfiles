@@ -32,17 +32,23 @@ for f in "${HOME_FILES[@]}"; do
   echo "   $f"
 done
 
-echo "==> Guardando la lista de paquetes que instalaste tú"
-if [[ -f /var/log/installer/initial-status.gz ]]; then
-  # Paquetes marcados como manuales que NO venían con la instalación de Ubuntu
-  comm -23 \
-    <(apt-mark showmanual | sort -u) \
-    <(gzip -dc /var/log/installer/initial-status.gz | sed -n 's/^Package: //p' | sort -u) \
-    > "$DOTS/packages/apt.txt"
+echo "==> Paquetes"
+LISTA="$DOTS/packages/apt.txt"
+if [[ -f $LISTA ]]; then
+  # Ya hay una lista revisada a mano: no se toca
+  echo "   packages/apt.txt ya existe, no se modifica (edítalo a mano para añadir paquetes)"
 else
-  apt-mark showmanual | sort -u > "$DOTS/packages/apt.txt"
+  if [[ -f /var/log/installer/initial-status.gz ]]; then
+    # Paquetes marcados como manuales que NO venían con la instalación de Ubuntu
+    comm -23 \
+      <(apt-mark showmanual | sort -u) \
+      <(gzip -dc /var/log/installer/initial-status.gz | sed -n 's/^Package: //p' | sort -u) \
+      > "$LISTA"
+  else
+    apt-mark showmanual | sort -u > "$LISTA"
+  fi
+  echo "   $(wc -l < "$LISTA") paquetes en packages/apt.txt (revísalo y borra lo que sobre)"
 fi
-echo "   $(wc -l < "$DOTS/packages/apt.txt") paquetes en packages/apt.txt (revísalo y borra lo que sobre)"
 
 echo
 echo "Listo. Revisa los cambios y súbelos:"

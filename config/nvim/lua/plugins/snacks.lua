@@ -21,7 +21,11 @@ return {
 
         {
           section = "terminal",
-          cmd = "chafa ~/Downloads/LogoCanal.png --format symbols --symbols vhalf --size 60x20 --stretch; sleep .1",
+          -- La imagen vive dentro de la config de nvim, así viaja con los dotfiles.
+          -- Si falta la imagen o chafa, el dashboard sale sin logo en vez de dar error.
+          cmd = "f='" .. vim.fn.stdpath("config") .. "/LogoCanal.png'; "
+            .. "[ -f \"$f\" ] && command -v chafa >/dev/null && "
+            .. "chafa \"$f\" --format symbols --symbols vhalf --size 60x20 --stretch; sleep .1",
           height = 30,
           padding = 1,
         },

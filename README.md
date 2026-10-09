@@ -54,7 +54,7 @@ Extras actuales:
 | `fish/alias-generales.fish` | Alias de uso diario (`cls`...); añade aquí los tuyos |
 | `fish/cursor-barra.fish` | Cursor en barra parpadeante, también al salir de nvim/htop/less |
 | `fish/homebrew.fish` | Carga Homebrew en fish (solo hace algo si brew está instalado) |
-| `fish/prompt-pez.fish` | Prompt `><°> usuario@ip:ruta (rama) ❯` |
+| `fish/prompt-pez.fish` | Prompt `><> usuario@ip:ruta (rama) ❯` |
 | `fish/alias-redes.fish` | Alias `ips`, `rutas`, `puertos`, `captura`... |
 | `bash/alias-redes.bash` | Los mismos alias para bash |
 | `bash/prompt-ip.bash` | Prompt de bash `usuario@ip:ruta$` |

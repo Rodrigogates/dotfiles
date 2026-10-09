@@ -1,6 +1,6 @@
 # Prompt "pez": ><> usuario@ip:ruta (rama git) ❯
-# Lo instala install.sh (módulo fish) en /etc/fish/conf.d/ si eliges este prompt.
-# El nombre del enlace empieza por zz- para cargarse después de Oh My Fish.
+# Extra de fish: se instala con install.sh -> módulo "extras" en la carpeta conf.d de sistema de fish.
+# El archivo instalado empieza por zz- para cargarse después de Oh My Fish y sustituir su prompt.
 
 set -g __fish_git_prompt_showdirtystate 1
 set -g __fish_git_prompt_showuntrackedfiles 1

@@ -103,7 +103,7 @@ mod_fish() {
 mod_nvim() {
   echo "==> Neovim (última versión estable)"
   # El nvim de apt en 24.04 es la 0.9, demasiado viejo para muchos plugins
-  apt_install ripgrep fd-find unzip gcc make xclip nodejs npm python3-venv
+  apt_install ripgrep fd-find unzip gcc make xclip nodejs npm python3-venv chafa
   local arch; arch=$(uname -m); [[ $arch == aarch64 ]] && arch=arm64
   local tmp; tmp=$(mktemp -d)
   curl -fL "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${arch}.tar.gz" -o "$tmp/nvim.tar.gz"

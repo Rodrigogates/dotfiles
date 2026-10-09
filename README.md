@@ -18,7 +18,7 @@ Se puede volver a ejecutar cuando quieras para añadir módulos. Al terminar com
 
 | Módulo | Qué instala | Qué configura |
 |---|---|---|
-| **base** | git, curl, wget, unzip, build-essential, ripgrep, fd, fzf, bat, tree, htop, btop, jq, xclip, tmux | Alias `fd` y `bat` en `~/.local/bin` |
+| **base** | git, curl, wget, unzip, build-essential, ripgrep, fd, fzf, bat, tree, htop, btop, jq, xclip, tmux, eza | Alias `fd` y `bat` en `~/.local/bin` |
 | **paquetes** | Los de `packages/apt.txt`, eligiendo uno a uno | — |
 | **redes** | Wireshark, tshark, tcpdump, nmap, traceroute, mtr, dig, netcat, iperf3, ipcalc, arp-scan, net-tools, openssh-server... | Wireshark sin root (grupo `wireshark`), SSH activo |
 | **fish** | fish, Oh My Fish | `~/.config/fish`, `~/.config/omf`. Pregunta si fish va como shell por defecto |
@@ -52,6 +52,7 @@ Extras actuales:
 | Extra | Qué es |
 |---|---|
 | `fish/alias-generales.fish` | Alias de uso diario (`cls`...); añade aquí los tuyos |
+| `fish/alias-eza.fish` | `ls`, `ll`, `la`, `lt` con eza (colores, carpetas primero, estado de git) |
 | `fish/cursor-barra.fish` | Cursor en barra parpadeante, también al salir de nvim/htop/less |
 | `fish/homebrew.fish` | Carga Homebrew en fish (solo hace algo si brew está instalado) |
 | `fish/prompt-pez.fish` | Prompt `><> usuario@ip:ruta (rama) ❯` |

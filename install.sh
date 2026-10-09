@@ -90,7 +90,7 @@ preguntar() {
 mod_base() {
   echo "==> Básicos"
   apt_install git curl wget unzip build-essential ripgrep fd-find fzf bat \
-    tree htop btop jq xclip tmux
+    tree htop btop jq xclip tmux eza
   # En Ubuntu fd y bat se llaman fdfind y batcat
   mkdir -p "$HOME/.local/bin"
   ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
@@ -204,7 +204,7 @@ mod_nvim() {
 
 # Programas que cada módulo debe dejar instalados (los que usan tus configs)
 declare -A NECESITA=(
-  [base]="git curl rg fd fzf bat tree htop btop jq xclip tmux"
+  [base]="git curl rg fd fzf bat tree htop btop jq xclip tmux eza"
   [redes]="ip ping traceroute mtr tcpdump tshark wireshark nmap nc dig iperf3 ipcalc ifconfig"
   [fish]="fish"
   [nvim]="nvim tree-sitter lazygit chafa rg fd node npm gcc unzip"

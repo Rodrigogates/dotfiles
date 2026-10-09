@@ -38,10 +38,10 @@ Cosas que solo quieres en algunas VMs (un prompt distinto, alias...). Viven fuer
 
 | En la VM | En el repo |
 |---|---|
-| `/etc/fish/conf.d/zz-<nombre>.fish` | `extras/fish/<nombre>.fish` |
+| `/etc/fish/conf.d/zz-<nombre>.fish` (fish de apt) o `/home/linuxbrew/.linuxbrew/etc/fish/conf.d/zz-<nombre>.fish` (fish de Homebrew) | `extras/fish/<nombre>.fish` |
 | `~/.bashrc.d/<nombre>.bash` (cargado desde `~/.bashrc`) | `extras/bash/<nombre>.bash` |
 
-- **Crear uno:** escríbelo en esa ruta de la VM. La primera línea, un comentario (`# ...`), es la descripción que sale en los menús.
+- **Crear uno:** escríbelo en esa ruta de la VM (para saber cuál usa tu fish: `echo $__fish_sysconf_dir`). La primera línea, un comentario (`# ...`), es la descripción que sale en los menús.
 - **Compartirlo:** `bash export.sh` lo detecta y lo ofrece como `extra:fish/...` o `extra:bash/...`.
 - **Ponerlo o quitarlo en una VM:** `bash install.sh` → módulo **extras**. Salen marcados los que ya tiene esa VM;
   desmarcar uno lo quita. Los que ya estén instalados no se sobrescriben (se respeta tu versión local);
@@ -51,6 +51,9 @@ Extras actuales:
 
 | Extra | Qué es |
 |---|---|
+| `fish/alias-generales.fish` | Alias de uso diario (`cls`...); añade aquí los tuyos |
+| `fish/cursor-barra.fish` | Cursor en barra parpadeante, también al salir de nvim/htop/less |
+| `fish/homebrew.fish` | Carga Homebrew en fish (solo hace algo si brew está instalado) |
 | `fish/prompt-pez.fish` | Prompt `><°> usuario@ip:ruta (rama) ❯` |
 | `fish/alias-redes.fish` | Alias `ips`, `rutas`, `puertos`, `captura`... |
 | `bash/alias-redes.bash` | Los mismos alias para bash |

@@ -31,9 +31,27 @@ put() {
   echo "   $dst"
 }
 
-# Extras locales de fish: copia en /etc/fish/conf.d (solo afecta a esta máquina)
-fish_extra_on()  { sudo mkdir -p /etc/fish/conf.d; sudo rm -f "/etc/fish/conf.d/zz-$1"; sudo cp "$DOTS/extras/fish/$1" "/etc/fish/conf.d/zz-$1"; echo "   /etc/fish/conf.d/zz-$1"; }
-fish_extra_off() { sudo rm -f "/etc/fish/conf.d/zz-$1"; }
+# Extras locales de fish: copia en la carpeta conf.d "de sistema" del fish instalado
+# (/etc/fish/conf.d con el fish de apt, .../linuxbrew/etc/fish/conf.d con el de Homebrew).
+# Solo afecta a esta máquina, no a ~/.config/fish.
+fish_confd() {
+  local d=""
+  command -v fish >/dev/null && d=$(fish -c 'echo $__fish_sysconf_dir' 2>/dev/null)
+  echo "${d:-/etc/fish}/conf.d"
+}
+# sudo solo si la carpeta no es nuestra (la de Homebrew sí lo es)
+como_dueno() {
+  local d; d=$(fish_confd)
+  if [[ -w $d || ( ! -e $d && -w $(dirname "$d") ) ]]; then "$@"; else sudo "$@"; fi
+}
+fish_extra_on() {
+  local d; d=$(fish_confd)
+  como_dueno mkdir -p "$d"
+  como_dueno rm -f "$d/zz-$1"
+  como_dueno cp "$DOTS/extras/fish/$1" "$d/zz-$1"
+  echo "   $d/zz-$1"
+}
+fish_extra_off() { como_dueno rm -f "$(fish_confd)/zz-$1"; }
 
 # Extras locales de bash: copia en ~/.bashrc.d y una línea en ~/.bashrc que la carga
 bash_extra_on() {
@@ -51,7 +69,7 @@ bash_extra_off() {
 
 # ¿Está este extra instalado en esta máquina? (tipo = fish | bash)
 extra_instalado() {
-  if [[ $1 == fish ]]; then [[ -e /etc/fish/conf.d/zz-$2 ]]
+  if [[ $1 == fish ]]; then [[ -e $(fish_confd)/zz-$2 ]]
   else grep -qF "# dotfiles:$2" "$HOME/.bashrc" 2>/dev/null
   fi
 }
@@ -215,9 +233,15 @@ comprobar() {
 mod_extras() {
   echo "==> Extras de esta VM"
   # Versión antigua del prompt del pez hecha a mano; ahora es el extra prompt-pez.fish
-  if [[ -e /etc/fish/conf.d/zz-prompt-redes.fish ]]; then
-    sudo rm -f /etc/fish/conf.d/zz-prompt-redes.fish
-    [[ -e /etc/fish/conf.d/zz-prompt-pez.fish ]] || fish_extra_on prompt-pez.fish
+  if [[ -e $(fish_confd)/zz-prompt-redes.fish ]]; then
+    fish_extra_off prompt-redes.fish
+    extra_instalado fish prompt-pez.fish || fish_extra_on prompt-pez.fish
+  fi
+  # Avisa si la config local de fish aún trae cosas que ahora son extras (versiones antiguas)
+  if grep -qsE 'brew shellenv|__cursor_barra|fix_cursor' "$HOME/.config/fish/config.fish" \
+     || [[ -e $HOME/.config/fish/functions/cls.fish ]]; then
+    echo "   Aviso: tu ~/.config/fish aún tiene cursor/Homebrew/cls de antes. No pasa nada si también"
+    echo "   marcas los extras, pero para dejarlo limpio reinstala el módulo fish."
   fi
 
   # Lista todos los extras del repo; los ya instalados aquí salen marcados

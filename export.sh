@@ -23,10 +23,15 @@ ITEMS=(
 )
 
 # Extras de esta VM (cosas solo de esta máquina, fuera de la config compartida):
-#   fish -> /etc/fish/conf.d/zz-<nombre>.fish   se guardan en extras/fish/<nombre>.fish
-#   bash -> ~/.bashrc.d/<nombre>.bash           se guardan en extras/bash/<nombre>.bash
+#   fish -> <conf.d de sistema de fish>/zz-<nombre>.fish   se guardan en extras/fish/<nombre>.fish
+#           (/etc/fish/conf.d con el fish de apt; .../linuxbrew/etc/fish/conf.d con el de Homebrew)
+#   bash -> ~/.bashrc.d/<nombre>.bash                      se guardan en extras/bash/<nombre>.bash
 # En otras VMs se eligen desde el módulo "extras" de install.sh.
-for f in /etc/fish/conf.d/zz-*.fish; do
+FISH_CONFD=/etc/fish/conf.d
+if command -v fish >/dev/null; then
+  d=$(fish -c 'echo $__fish_sysconf_dir' 2>/dev/null) && [[ -n $d ]] && FISH_CONFD="$d/conf.d"
+fi
+for f in "$FISH_CONFD"/zz-*.fish; do
   [[ -e $f ]] || continue
   b=$(basename "$f"); b=${b#zz-}
   ITEMS+=("extra:fish/$b|$f|extras/fish/$b")

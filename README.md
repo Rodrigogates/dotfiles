@@ -25,8 +25,9 @@ Se puede volver a ejecutar cuando quieras para añadir módulos. Al terminar com
 | **nvim** | Neovim (última estable), tree-sitter CLI, lazygit, chafa, ripgrep, fd, node, gcc | `~/.config/nvim` (LazyVim) y sus plugins según `lazy-lock.json` |
 | **dotfiles** | — | `~/.config/htop`, `~/.gitconfig` y demás ficheros de `config/` y `home/` |
 
-Las configuraciones se **enlazan** (no se copian): lo que cambies en la VM queda en `~/dotfiles` y se sube con `git push`.
-Si ya existía algo en el destino, se mueve a `~/.dotfiles-backup/<fecha>/`.
+Las configuraciones se **copian**: cada VM tiene su propia copia y lo que cambies en una no afecta al repo ni a las demás.
+Para compartir algo, usa `export.sh` (abajo). Si ya existía algo en el destino, se mueve a `~/.dotfiles-backup/<fecha>/`.
+Después de instalar puedes borrar `~/dotfiles` si quieres: la VM no depende de esa carpeta.
 
 Después de instalar nvim, ábrelo una vez y espera a que Mason termine de descargar sus herramientas.
 
@@ -36,12 +37,12 @@ Cosas que se eligen al instalar y solo afectan a esa VM, sin tocar la config com
 
 | Archivo | Qué es | Cómo se activa |
 |---|---|---|
-| `extras/fish/prompt-pez.fish` | Prompt `><°> usuario@ip:ruta (rama) ❯` | Enlace en `/etc/fish/conf.d/zz-prompt-pez.fish` |
-| `extras/fish/alias-redes.fish` | Alias `ips`, `rutas`, `puertos`, `captura`... | Enlace en `/etc/fish/conf.d/zz-alias-redes.fish` |
-| `extras/bash/alias-redes.bash` | Los mismos alias para bash | Línea `# dotfiles:alias-redes.bash` en `~/.bashrc` |
-| `extras/bash/prompt-ip.bash` | Prompt de bash `usuario@ip:ruta$` | Línea `# dotfiles:prompt-ip.bash` en `~/.bashrc` |
+| `extras/fish/prompt-pez.fish` | Prompt `><°> usuario@ip:ruta (rama) ❯` | Copia en `/etc/fish/conf.d/zz-prompt-pez.fish` |
+| `extras/fish/alias-redes.fish` | Alias `ips`, `rutas`, `puertos`, `captura`... | Copia en `/etc/fish/conf.d/zz-alias-redes.fish` |
+| `extras/bash/alias-redes.bash` | Los mismos alias para bash | Copia en `~/.bashrc.d/` + línea `# dotfiles:alias-redes.bash` en `~/.bashrc` |
+| `extras/bash/prompt-ip.bash` | Prompt de bash `usuario@ip:ruta$` | Copia en `~/.bashrc.d/` + línea `# dotfiles:prompt-ip.bash` en `~/.bashrc` |
 
-Para quitar uno: borra el enlace de `/etc/fish/conf.d/` o la línea de `~/.bashrc`, o vuelve a ejecutar `install.sh` y elige otra opción.
+Para quitar uno: borra el archivo de `/etc/fish/conf.d/` o la línea de `~/.bashrc`, o vuelve a ejecutar `install.sh` y elige otra opción.
 
 ## Dependencias de las configuraciones
 
@@ -49,12 +50,19 @@ Si añades a una config algo que llama a un programa externo, añádelo también
 
 - **nvim**: `chafa` (logo del dashboard, `config/nvim/LogoCanal.png`), `lazygit` (atajo `<leader>gg`), `tree-sitter` (nvim-treesitter).
 
-## Exportar (en la VM principal)
+## Compartir cambios (desde cualquier VM)
 
 ```bash
-cd ~/dotfiles && git pull && bash export.sh
-git status                     # revisar qué cambia
-git add . && git commit -m "Actualizar dotfiles" && git push
+cd ~/dotfiles && bash export.sh   # menú: eliges qué compartir (nvim, fish, htop...)
+git diff                          # revisa qué cambia
+git restore <archivo>             # descarta lo que no quieras compartir
+git add . && git commit -m "..." && git push
 ```
+
+`export.sh` hace `git pull`, copia lo elegido **encima** de lo que hay en el repo (no borra archivos que solo existan en el repo)
+y te enseña los cambios. Nada se comparte hasta que haces `git push`.
+
+Para que otra VM reciba lo compartido: `cd ~/dotfiles && git pull && bash install.sh` y marca los módulos que quieras actualizar
+(lo que tuviera esa VM se guarda en `~/.dotfiles-backup/`).
 
 `packages/apt.txt` solo se genera la primera vez; después se edita a mano.

@@ -15,28 +15,34 @@ fi
 
 apt_install() { sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"; }
 
-# Crea un enlace simbólico; si ya había algo, lo mueve a la carpeta de backup
-link() {
+# Copia una config del repo a esta máquina. Cada VM queda con su propia copia:
+# lo que cambies aquí no afecta al repo ni a otras VMs (para compartir: export.sh).
+# Si ya había algo, lo mueve a la carpeta de backup; si era un enlace antiguo, lo quita.
+put() {
   local src="$1" dst="$2"
   [[ -e $src ]] || return 0
-  if [[ -e $dst || -L $dst ]] && [[ "$(readlink -f "$dst")" != "$(readlink -f "$src")" ]]; then
+  if [[ -L $dst ]]; then
+    rm "$dst"
+  elif [[ -e $dst ]]; then
     mkdir -p "$BACKUP"; mv "$dst" "$BACKUP/"
   fi
   mkdir -p "$(dirname "$dst")"
-  ln -sfn "$src" "$dst"
-  echo "   $dst -> $src"
+  cp -a "$src" "$dst"
+  echo "   $dst"
 }
 
-# Extras locales de fish: enlace en /etc/fish/conf.d (solo afecta a esta máquina,
-# no a ~/.config/fish, que es compartido por todas las VMs)
-fish_extra_on()  { sudo mkdir -p /etc/fish/conf.d; sudo ln -sfn "$DOTS/extras/fish/$1" "/etc/fish/conf.d/zz-$1"; echo "   /etc/fish/conf.d/zz-$1"; }
+# Extras locales de fish: copia en /etc/fish/conf.d (solo afecta a esta máquina)
+fish_extra_on()  { sudo mkdir -p /etc/fish/conf.d; sudo rm -f "/etc/fish/conf.d/zz-$1"; sudo cp "$DOTS/extras/fish/$1" "/etc/fish/conf.d/zz-$1"; echo "   /etc/fish/conf.d/zz-$1"; }
 fish_extra_off() { sudo rm -f "/etc/fish/conf.d/zz-$1"; }
 
-# Extras locales de bash: una línea al final de ~/.bashrc que carga el archivo del repo
+# Extras locales de bash: copia en ~/.bashrc.d y una línea en ~/.bashrc que la carga
 bash_extra_on() {
-  local linea="[ -f \"$DOTS/extras/bash/$1\" ] && . \"$DOTS/extras/bash/$1\"  # dotfiles:$1"
-  grep -qF "# dotfiles:$1" "$HOME/.bashrc" 2>/dev/null || echo "$linea" >> "$HOME/.bashrc"
-  echo "   ~/.bashrc carga extras/bash/$1"
+  mkdir -p "$HOME/.bashrc.d"
+  cp "$DOTS/extras/bash/$1" "$HOME/.bashrc.d/$1"
+  # Quita la línea de versiones anteriores (que cargaban el archivo directamente del repo)
+  sed -i "\|# dotfiles:$1\$|d" "$HOME/.bashrc"
+  echo "[ -f ~/.bashrc.d/$1 ] && . ~/.bashrc.d/$1  # dotfiles:$1" >> "$HOME/.bashrc"
+  echo "   ~/.bashrc.d/$1"
 }
 
 # Pregunta de sí/no con whiptail; en modo --all usa el valor por defecto (1 = sí)
@@ -116,10 +122,10 @@ mod_redes() {
 mod_fish() {
   echo "==> Fish"
   apt_install fish
-  link "$DOTS/config/fish" "$HOME/.config/fish"
+  put "$DOTS/config/fish" "$HOME/.config/fish"
   [[ -f $DOTS/config/starship.toml ]] && {
     curl -sS https://starship.rs/install.sh | sh -s -- -y
-    link "$DOTS/config/starship.toml" "$HOME/.config/starship.toml"
+    put "$DOTS/config/starship.toml" "$HOME/.config/starship.toml"
   }
   # Oh My Fish: instala el framework y luego el tema y paquetes de config/omf
   if [[ -f $DOTS/config/fish/conf.d/omf.fish ]]; then
@@ -129,7 +135,7 @@ mod_fish() {
       fish "$omf_tmp" --noninteractive --yes || true
       rm -f "$omf_tmp"
     fi
-    link "$DOTS/config/omf" "$HOME/.config/omf"
+    put "$DOTS/config/omf" "$HOME/.config/omf"
     [[ -d $DOTS/config/omf ]] && fish -c 'omf install' || true
   fi
   # Plugins de Fisher (lee ~/.config/fish/fish_plugins)
@@ -191,7 +197,7 @@ mod_nvim() {
     echo "   !! No se pudo averiguar la versión de lazygit; instálalo a mano"
   fi
   rm -rf "$tmp"
-  link "$DOTS/config/nvim" "$HOME/.config/nvim"
+  put "$DOTS/config/nvim" "$HOME/.config/nvim"
   # Instala los plugins con las versiones exactas de lazy-lock.json
   if [[ -f $HOME/.config/nvim/lazy-lock.json ]]; then
     nvim --headless "+Lazy! restore" +qa || true
@@ -234,11 +240,12 @@ mod_dotfiles() {
   for d in "$DOTS"/config/*; do
     name=$(basename "$d")
     case $name in nvim|fish|omf|starship.toml) continue ;; esac
-    link "$d" "$HOME/.config/$name"
+    put "$d" "$HOME/.config/$name"
   done
   for f in "$DOTS"/home/.[!.]*; do
-    [[ -e $f ]] && link "$f" "$HOME/$(basename "$f")"
+    [[ -e $f ]] && put "$f" "$HOME/$(basename "$f")"
   done
+  return 0
 }
 
 # ---------------------------------------------------------------- menú

@@ -111,12 +111,18 @@ mod_nvim() {
   sudo mkdir -p /opt/nvim
   sudo tar -xzf "$tmp/nvim.tar.gz" -C /opt/nvim --strip-components=1
   sudo ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim
+  # tree-sitter CLI: lo necesita nvim-treesitter (rama main) para compilar parsers
+  local ts_arch=x64; [[ $arch == arm64 ]] && ts_arch=arm64
+  curl -fL "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-${ts_arch}.gz" \
+    | gunzip > "$tmp/tree-sitter"
+  sudo install -m 755 "$tmp/tree-sitter" /usr/local/bin/tree-sitter
   rm -rf "$tmp"
   link "$DOTS/config/nvim" "$HOME/.config/nvim"
   # Instala los plugins con las versiones exactas de lazy-lock.json
   if [[ -f $HOME/.config/nvim/lazy-lock.json ]]; then
     nvim --headless "+Lazy! restore" +qa || true
   fi
+  echo "   Abre nvim una vez y espera a que Mason termine de instalar sus herramientas."
 }
 
 mod_dotfiles() {

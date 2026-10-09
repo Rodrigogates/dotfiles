@@ -3,7 +3,7 @@
 # Uso:  bash install.sh          -> menú para elegir módulos
 #       bash install.sh --all    -> lo instala todo sin preguntar
 # Ejecútalo como tu usuario (NO con sudo); pedirá la contraseña cuando haga falta.
-set -euo pipefail
+set -Eeuo pipefail
 
 DOTS="$(cd "$(dirname "$0")" && pwd)"
 BACKUP="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
@@ -61,11 +61,13 @@ mod_paquetes() {
 
 mod_redes() {
   echo "==> Herramientas de Redes"
-  echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
-  echo "iperf3 iperf3/start_daemon boolean false" | sudo debconf-set-selections
   apt_install net-tools iproute2 iputils-ping iputils-arping iputils-tracepath \
     traceroute mtr-tiny tcpdump tshark wireshark nmap netcat-openbsd socat telnet \
     whois bind9-dnsutils ethtool iperf3 ipcalc openssh-server bridge-utils vlan arp-scan
+  # Si Wireshark ya estaba instalado sin captura para usuarios, se reconfigura
+  if ! getent group wireshark >/dev/null; then
+    sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure wireshark-common
+  fi
   sudo usermod -aG wireshark "$USER"
   sudo systemctl enable --now ssh
 }
@@ -132,6 +134,10 @@ mod_dotfiles() {
 # ---------------------------------------------------------------- menú
 
 sudo -v
+# Respuestas por defecto para paquetes que preguntan al instalarse
+# (va aquí para que valga en cualquier módulo que instale Wireshark o iperf3)
+echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+echo "iperf3 iperf3/start_daemon boolean false" | sudo debconf-set-selections
 sudo apt-get update
 command -v whiptail >/dev/null || apt_install whiptail
 
@@ -149,7 +155,12 @@ else
     3>&1 1>&2 2>&3) || { echo "Cancelado."; exit 0; }
 fi
 
-for m in $MODULOS; do "mod_$m"; done
+for m in $MODULOS; do
+  ACTUAL=$m
+  trap 'echo; echo "!! Ha fallado el módulo \"$ACTUAL\". Los siguientes no se han ejecutado." >&2' ERR
+  "mod_$m"
+done
+trap - ERR
 
 echo
 [[ -d $BACKUP ]] && echo "Lo que había antes está en $BACKUP"

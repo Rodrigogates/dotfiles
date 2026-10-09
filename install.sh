@@ -27,6 +27,29 @@ link() {
   echo "   $dst -> $src"
 }
 
+# Extras locales de fish: enlace en /etc/fish/conf.d (solo afecta a esta máquina,
+# no a ~/.config/fish, que es compartido por todas las VMs)
+fish_extra_on()  { sudo mkdir -p /etc/fish/conf.d; sudo ln -sfn "$DOTS/extras/fish/$1" "/etc/fish/conf.d/zz-$1"; echo "   /etc/fish/conf.d/zz-$1"; }
+fish_extra_off() { sudo rm -f "/etc/fish/conf.d/zz-$1"; }
+
+# Extras locales de bash: una línea al final de ~/.bashrc que carga el archivo del repo
+bash_extra_on() {
+  local linea="[ -f \"$DOTS/extras/bash/$1\" ] && . \"$DOTS/extras/bash/$1\"  # dotfiles:$1"
+  grep -qF "# dotfiles:$1" "$HOME/.bashrc" 2>/dev/null || echo "$linea" >> "$HOME/.bashrc"
+  echo "   ~/.bashrc carga extras/bash/$1"
+}
+
+# Pregunta de sí/no con whiptail; en modo --all usa el valor por defecto (1 = sí)
+preguntar() {
+  local titulo="$1" texto="$2" defecto="$3"
+  if $ALL; then [[ $defecto == 1 ]]; return; fi
+  if [[ $defecto == 1 ]]; then
+    whiptail --title "$titulo" --yesno "$texto" 10 70
+  else
+    whiptail --title "$titulo" --defaultno --yesno "$texto" 10 70
+  fi
+}
+
 # ---------------------------------------------------------------- módulos
 
 mod_base() {
@@ -70,6 +93,24 @@ mod_redes() {
   fi
   sudo usermod -aG wireshark "$USER"
   sudo systemctl enable --now ssh
+
+  # Extras opcionales
+  local extras=""
+  if $ALL; then
+    extras="alias"
+  else
+    extras=$(whiptail --title "Redes: extras" --separate-output --checklist \
+      "Extras para esta VM (Espacio marca, Enter acepta)" 12 74 2 \
+      alias     "Alias de red: ips, rutas, puertos, captura... (bash y fish)" ON  \
+      prompt_ip "Prompt de bash usuario@ip"                                   OFF \
+      3>&1 1>&2 2>&3) || extras=""
+  fi
+  if [[ $extras == *alias* ]]; then
+    bash_extra_on alias-redes.bash
+    fish_extra_on alias-redes.fish
+  fi
+  [[ $extras == *prompt_ip* ]] && bash_extra_on prompt-ip.bash
+  return 0
 }
 
 mod_fish() {
@@ -95,9 +136,30 @@ mod_fish() {
   if [[ -f $HOME/.config/fish/fish_plugins ]]; then
     fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher update'
   fi
-  if [[ "$(getent passwd "$USER" | cut -d: -f7)" != "$(command -v fish)" ]]; then
-    chsh -s "$(command -v fish)"
+  # Qué prompt usar en esta VM
+  local prompt=tema
+  if ! $ALL; then
+    prompt=$(whiptail --title "Prompt de fish" --radiolist \
+      "¿Qué prompt quieres en esta VM? (Espacio elige, Enter acepta)" 12 74 2 \
+      tema "Tema de Oh My Fish  ⋊> ~/dotfiles on main ◦"            ON  \
+      pez  "Pez con IP y git    ><°> usuario@ip:~/dotfiles (main) ❯" OFF \
+      3>&1 1>&2 2>&3) || prompt=tema
   fi
+  # Versión antigua hecha a mano en la VM de Redes; la sustituye prompt-pez.fish
+  sudo rm -f /etc/fish/conf.d/zz-prompt-redes.fish
+  if [[ $prompt == pez ]]; then
+    fish_extra_on prompt-pez.fish
+  else
+    fish_extra_off prompt-pez.fish
+  fi
+
+  if [[ "$(getent passwd "$USER" | cut -d: -f7)" != "$(command -v fish)" ]]; then
+    if preguntar "Shell por defecto" "¿Poner fish como shell por defecto? (si dices que no, se abre escribiendo fish)" 1; then
+      grep -qxF "$(command -v fish)" /etc/shells || command -v fish | sudo tee -a /etc/shells >/dev/null
+      chsh -s "$(command -v fish)"
+    fi
+  fi
+  return 0
 }
 
 mod_nvim() {

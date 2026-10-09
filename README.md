@@ -20,8 +20,8 @@ Se puede volver a ejecutar cuando quieras para añadir módulos. Al terminar com
 |---|---|---|
 | **base** | git, curl, wget, unzip, build-essential, ripgrep, fd, fzf, bat, tree, htop, btop, jq, xclip, tmux | Alias `fd` y `bat` en `~/.local/bin` |
 | **paquetes** | Los de `packages/apt.txt`, eligiendo uno a uno | — |
-| **redes** | Wireshark, tshark, tcpdump, nmap, traceroute, mtr, dig, netcat, iperf3, ipcalc, arp-scan, net-tools, openssh-server... | Wireshark sin root (grupo `wireshark`), SSH activo |
-| **fish** | fish, Oh My Fish | `~/.config/fish`, `~/.config/omf`, fish como shell por defecto |
+| **redes** | Wireshark, tshark, tcpdump, nmap, traceroute, mtr, dig, netcat, iperf3, ipcalc, arp-scan, net-tools, openssh-server... | Wireshark sin root (grupo `wireshark`), SSH activo. **Opcional:** alias de red y prompt de bash `usuario@ip` |
+| **fish** | fish, Oh My Fish | `~/.config/fish`, `~/.config/omf`. **Pregunta:** prompt (tema de Oh My Fish o pez con IP y git) y si fish va como shell por defecto |
 | **nvim** | Neovim (última estable), tree-sitter CLI, lazygit, chafa, ripgrep, fd, node, gcc | `~/.config/nvim` (LazyVim) y sus plugins según `lazy-lock.json` |
 | **dotfiles** | — | `~/.config/htop`, `~/.gitconfig` y demás ficheros de `config/` y `home/` |
 
@@ -29,6 +29,19 @@ Las configuraciones se **enlazan** (no se copian): lo que cambies en la VM queda
 Si ya existía algo en el destino, se mueve a `~/.dotfiles-backup/<fecha>/`.
 
 Después de instalar nvim, ábrelo una vez y espera a que Mason termine de descargar sus herramientas.
+
+## Extras por máquina (`extras/`)
+
+Cosas que se eligen al instalar y solo afectan a esa VM, sin tocar la config compartida:
+
+| Archivo | Qué es | Cómo se activa |
+|---|---|---|
+| `extras/fish/prompt-pez.fish` | Prompt `><°> usuario@ip:ruta (rama) ❯` | Enlace en `/etc/fish/conf.d/zz-prompt-pez.fish` |
+| `extras/fish/alias-redes.fish` | Alias `ips`, `rutas`, `puertos`, `captura`... | Enlace en `/etc/fish/conf.d/zz-alias-redes.fish` |
+| `extras/bash/alias-redes.bash` | Los mismos alias para bash | Línea `# dotfiles:alias-redes.bash` en `~/.bashrc` |
+| `extras/bash/prompt-ip.bash` | Prompt de bash `usuario@ip:ruta$` | Línea `# dotfiles:prompt-ip.bash` en `~/.bashrc` |
+
+Para quitar uno: borra el enlace de `/etc/fish/conf.d/` o la línea de `~/.bashrc`, o vuelve a ejecutar `install.sh` y elige otra opción.
 
 ## Dependencias de las configuraciones
 

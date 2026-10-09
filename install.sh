@@ -116,6 +116,18 @@ mod_nvim() {
   curl -fL "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-${ts_arch}.gz" \
     | gunzip > "$tmp/tree-sitter"
   sudo install -m 755 "$tmp/tree-sitter" /usr/local/bin/tree-sitter
+  # lazygit: lo abre el atajo <leader>gg de la config (no está en apt de 24.04)
+  local lg_arch=x86_64; [[ $arch == arm64 ]] && lg_arch=arm64
+  local lg_ver
+  lg_ver=$(curl -fsSL https://api.github.com/repos/jesseduffield/lazygit/releases/latest \
+    | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p')
+  if [[ -n $lg_ver ]]; then
+    curl -fL "https://github.com/jesseduffield/lazygit/releases/download/v${lg_ver}/lazygit_${lg_ver}_Linux_${lg_arch}.tar.gz" \
+      | tar -xz -C "$tmp" lazygit
+    sudo install -m 755 "$tmp/lazygit" /usr/local/bin/lazygit
+  else
+    echo "   !! No se pudo averiguar la versión de lazygit; instálalo a mano"
+  fi
   rm -rf "$tmp"
   link "$DOTS/config/nvim" "$HOME/.config/nvim"
   # Instala los plugins con las versiones exactas de lazy-lock.json
@@ -123,6 +135,36 @@ mod_nvim() {
     nvim --headless "+Lazy! restore" +qa || true
   fi
   echo "   Abre nvim una vez y espera a que Mason termine de instalar sus herramientas."
+}
+
+# ---------------------------------------------------------------- comprobación
+
+# Programas que cada módulo debe dejar instalados (los que usan tus configs)
+declare -A NECESITA=(
+  [base]="git curl rg fd fzf bat tree htop btop jq xclip tmux"
+  [redes]="ip ping traceroute mtr tcpdump tshark wireshark nmap nc dig iperf3 ipcalc ifconfig"
+  [fish]="fish"
+  [nvim]="nvim tree-sitter lazygit chafa rg fd node npm gcc unzip"
+)
+
+comprobar() {
+  echo
+  echo "==> Comprobación"
+  local faltan=0 m cmd
+  for m in $MODULOS; do
+    [[ -n ${NECESITA[$m]:-} ]] || continue
+    local ko=()
+    for cmd in ${NECESITA[$m]}; do
+      command -v "$cmd" >/dev/null || [[ -x $HOME/.local/bin/$cmd ]] || ko+=("$cmd")
+    done
+    if ((${#ko[@]})); then
+      echo "   ✗ $m: falta ${ko[*]}"; faltan=1
+    else
+      echo "   ✓ $m"
+    fi
+  done
+  ((faltan)) && echo "   Vuelve a ejecutar install.sh con esos módulos o instálalos a mano."
+  return 0
 }
 
 mod_dotfiles() {
@@ -156,7 +198,7 @@ else
     paquetes "Paquetes exportados (eliges uno a uno)"         OFF \
     redes    "Herramientas de Redes (Wireshark, nmap...)"     OFF \
     fish     "Fish + plugins + shell por defecto"             ON  \
-    nvim     "Neovim última versión + tu configuración"       ON  \
+    nvim     "Neovim + LazyVim + lazygit, chafa, tree-sitter" ON  \
     dotfiles "Resto de configs (git, tmux, terminal...)"      ON  \
     3>&1 1>&2 2>&3) || { echo "Cancelado."; exit 0; }
 fi
@@ -167,6 +209,8 @@ for m in $MODULOS; do
   "mod_$m"
 done
 trap - ERR
+
+comprobar
 
 echo
 [[ -d $BACKUP ]] && echo "Lo que había antes está en $BACKUP"

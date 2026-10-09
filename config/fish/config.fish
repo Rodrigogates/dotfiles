@@ -14,3 +14,8 @@ end
 function __cursor_barra --on-event fish_prompt
     printf '\e[5 q'
 end
+
+# Homebrew (solo si existe en esta máquina)
+if test -x /home/linuxbrew/.linuxbrew/bin/brew
+    /home/linuxbrew/.linuxbrew/bin/brew shellenv | source
+end

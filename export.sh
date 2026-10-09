@@ -6,7 +6,7 @@ set -euo pipefail
 DOTS="$(cd "$(dirname "$0")" && pwd)"
 
 # Carpetas dentro de ~/.config que se guardan si existen (añade las tuyas)
-CONFIG_ITEMS=(nvim fish starship.toml kitty alacritty wezterm tmux btop htop lazygit yazi bat)
+CONFIG_ITEMS=(nvim fish omf starship.toml kitty alacritty wezterm tmux btop htop lazygit yazi bat)
 # Ficheros sueltos en ~ que se guardan si existen
 HOME_FILES=(.gitconfig .tmux.conf .inputrc .bash_aliases)
 
@@ -45,5 +45,5 @@ fi
 echo "   $(wc -l < "$DOTS/packages/apt.txt") paquetes en packages/apt.txt (revísalo y borra lo que sobre)"
 
 echo
-echo "Listo. Sube la carpeta a GitHub:"
-echo "   cd $DOTS && git init && git add . && git commit -m 'dotfiles' && git push"
+echo "Listo. Revisa los cambios y súbelos:"
+echo "   cd $DOTS && git status && git add . && git commit -m 'Actualizar dotfiles' && git push"

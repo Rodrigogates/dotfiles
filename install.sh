@@ -78,6 +78,17 @@ mod_fish() {
     curl -sS https://starship.rs/install.sh | sh -s -- -y
     link "$DOTS/config/starship.toml" "$HOME/.config/starship.toml"
   }
+  # Oh My Fish: instala el framework y luego el tema y paquetes de config/omf
+  if [[ -f $DOTS/config/fish/conf.d/omf.fish ]]; then
+    if [[ ! -d $HOME/.local/share/omf ]]; then
+      local omf_tmp; omf_tmp=$(mktemp)
+      curl -fsSL https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install -o "$omf_tmp"
+      fish "$omf_tmp" --noninteractive --yes || true
+      rm -f "$omf_tmp"
+    fi
+    link "$DOTS/config/omf" "$HOME/.config/omf"
+    [[ -d $DOTS/config/omf ]] && fish -c 'omf install' || true
+  fi
   # Plugins de Fisher (lee ~/.config/fish/fish_plugins)
   if [[ -f $HOME/.config/fish/fish_plugins ]]; then
     fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher update'
@@ -110,7 +121,7 @@ mod_dotfiles() {
   echo "==> Resto de configuraciones"
   for d in "$DOTS"/config/*; do
     name=$(basename "$d")
-    case $name in nvim|fish|starship.toml) continue ;; esac
+    case $name in nvim|fish|omf|starship.toml) continue ;; esac
     link "$d" "$HOME/.config/$name"
   done
   for f in "$DOTS"/home/.[!.]*; do
